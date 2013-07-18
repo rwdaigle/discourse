@@ -1,5 +1,7 @@
 source 'https://rubygems.org'
 
+ruby '2.0.0'
+
 # monkey patching to support dual booting
 module Bundler::SharedHelpers
   def default_lockfile=(path)
@@ -193,6 +195,11 @@ gem 'redis-rack-cache', git: 'https://github.com/SamSaffron/redis-rack-cache.git
 gem 'rack-cache', require: false
 gem 'rack-cors', require: false
 gem 'unicorn', require: false
+
+# Heroku (but useful anywhere) stuff
+gem 'unicorn-worker-killer'
+gem 'newrelic_rpm'
+gem 'honeybadger'
 
 # perftools only works on 1.9 atm
 group :profile do

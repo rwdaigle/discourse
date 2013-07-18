@@ -1,3 +1,5 @@
+Note: This is a fork of Discourse specifically for [deploying to Heroku](docs/HEROKU.md).
+
 <a href="http://www.discourse.org/">![Logo](images/discourse.png)</a>
 
 Discourse is the 100% open source, next-generation discussion platform built for the next decade of the Internet.
