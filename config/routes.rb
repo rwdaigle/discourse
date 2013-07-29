@@ -96,6 +96,8 @@ Discourse::Application.routes.draw do
     end
   end
 
+  get 'session/csrf' => 'session#csrf'
+
   resources :users, except: [:show, :update] do
     collection do
       get 'check_username'
@@ -125,6 +127,7 @@ Discourse::Application.routes.draw do
   get 'users/:username/preferences' => 'users#preferences', constraints: {username: USERNAME_ROUTE_FORMAT}, as: :email_preferences
   get 'users/:username/preferences/email' => 'users#preferences', constraints: {username: USERNAME_ROUTE_FORMAT}
   put 'users/:username/preferences/email' => 'users#change_email', constraints: {username: USERNAME_ROUTE_FORMAT}
+  get 'users/:username/preferences/about-me' => 'users#preferences', constraints: {username: USERNAME_ROUTE_FORMAT}
   get 'users/:username/preferences/username' => 'users#preferences', constraints: {username: USERNAME_ROUTE_FORMAT}
   put 'users/:username/preferences/username' => 'users#username', constraints: {username: USERNAME_ROUTE_FORMAT}
   get 'users/:username/avatar(/:size)' => 'users#avatar', constraints: {username: USERNAME_ROUTE_FORMAT}
@@ -200,6 +203,7 @@ Discourse::Application.routes.draw do
   post 't' => 'topics#create'
   post 'topics/timings'
   get 'topics/similar_to'
+  get 'topics/created-by/:username' => 'list#topics_by', as: 'topics_by', constraints: {username: USERNAME_ROUTE_FORMAT}
 
   # Legacy route for old avatars
   get 'threads/:topic_id/:post_number/avatar' => 'topics#avatar', constraints: {topic_id: /\d+/, post_number: /\d+/}

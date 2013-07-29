@@ -1,5 +1,6 @@
 require_dependency 'markdown_linker'
 require_dependency 'email/message_builder'
+require_dependency 'age_words'
 
 class UserNotifications < ActionMailer::Base
   default charset: 'UTF-8'
@@ -29,7 +30,6 @@ class UserNotifications < ActionMailer::Base
 
   def private_message(user, opts={})
     post = opts[:post]
-
     build_email user.email,
                 template: "user_notifications.private_message",
                 message: post.raw,
@@ -94,26 +94,59 @@ class UserNotifications < ActionMailer::Base
 
   protected
 
-  def notification_email(user, opts)
-    @notification = opts[:notification]
-    return unless @notification.present?
+  def email_post_markdown(post)
+    result = "[email-indent]\n"
+    result << "#{post.raw}\n\n"
+    result << "#{I18n.t('user_notifications.posted_by', username: post.username, post_date: post.created_at.strftime("%m/%d/%Y"))}\n\n"
+    result << "[/email-indent]\n"
+    result
+  end
 
-    @post = opts[:post]
-    return unless @post.present?
+  class UserNotificationRenderer < ActionView::Base
+    include UserNotificationsHelper
+  end
+
+  def notification_email(user, opts)
+
+    return unless @notification = opts[:notification]
+    return unless @post = opts[:post]
 
     username = @notification.data_hash[:display_username]
-    notification_type = Notification.types[opts[:notification].notification_type].to_s
+    notification_type = Notification.types[@notification.notification_type].to_s
+
+    context = ""
+    context_posts = Post.where(topic_id: @post.topic_id)
+                        .where("post_number < ?", @post.post_number)
+                        .order('created_at desc')
+                        .limit(SiteSetting.email_posts_context)
+
+    if context_posts.present?
+      context << "---\n*#{I18n.t('user_notifications.previous_discussion')}*\n"
+      context_posts.each do |cp|
+        context << email_post_markdown(cp)
+      end
+    end
+
+    html = UserNotificationRenderer.new(Rails.configuration.paths["app/views"]).render(
+          template: 'email/notification',
+          format: :html,
+          locals: { context_posts: context_posts, post: @post }
+    )
+
 
     email_opts = {
       topic_title: @notification.data_hash[:topic_title],
-      message: @post.raw,
+      message: email_post_markdown(@post),
       url: @post.url,
       post_id: @post.id,
       topic_id: @post.topic_id,
+      context: context,
       username: username,
       add_unsubscribe_link: true,
       allow_reply_by_email: opts[:allow_reply_by_email],
-      template: "user_notifications.user_#{notification_type}"
+      template: "user_notifications.user_#{notification_type}",
+      html_override: html,
+      style: :notification
     }
 
     # If we have a display name, change the from address
@@ -123,7 +156,5 @@ class UserNotifications < ActionMailer::Base
 
     build_email(user.email, email_opts)
   end
-
-
 
 end

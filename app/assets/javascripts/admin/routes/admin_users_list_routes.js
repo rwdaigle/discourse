@@ -13,6 +13,20 @@ Discourse.AdminUsersListRoute = Discourse.Route.extend({
 });
 
 /**
+  Index should just redirect to active
+
+  @class AdminUsersIndexRoute
+  @extends Discourse.Route
+  @namespace Discourse
+  @module Discourse
+**/
+Discourse.AdminUsersListIndexRoute = Discourse.Route.extend({
+  redirect: function() {
+    this.transitionTo('adminUsersList.active');
+  }
+});
+
+/**
   Handles the route that lists active users.
 
   @class AdminUsersListActiveRoute

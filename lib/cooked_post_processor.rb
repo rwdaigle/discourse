@@ -164,7 +164,7 @@ class CookedPostProcessor
 
     filename = get_filename(upload, img['src'])
     informations = "#{original_width}x#{original_height}"
-    informations << " | #{number_to_human_size(upload.filesize)}" if upload
+    informations << " #{number_to_human_size(upload.filesize)}" if upload
 
     meta.add_child create_span_node("filename", filename)
     meta.add_child create_span_node("informations", informations)
@@ -223,10 +223,12 @@ class CookedPostProcessor
 
   def attachments
     if SiteSetting.enable_s3_uploads?
-      @doc.css("a[href^=\"#{S3Store.base_url}\"]")
+      @doc.css("a.attachment[href^=\"#{S3Store.base_url}\"]")
     else
       # local uploads are identified using a relative uri
-      @doc.css("a[href^=\"#{LocalStore.directory}\"]")
+      @doc.css("a.attachment[href^=\"#{LocalStore.directory}\"]") +
+      # when cdn is enabled, we have the whole url
+      @doc.css("a.attachment[href^=\"#{LocalStore.base_url}\"]")
     end
   end
 

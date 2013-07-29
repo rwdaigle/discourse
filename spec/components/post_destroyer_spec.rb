@@ -8,14 +8,16 @@ describe PostDestroyer do
   end
 
   let(:moderator) { Fabricate(:moderator) }
+  let(:admin) { Fabricate(:admin) }
   let(:post) { create_post }
 
   describe 'destroy_old_stubs' do
     it 'destroys stubs for deleted by user posts' do
       Fabricate(:admin)
-      reply1 = create_post(topic: post.topic)
-      reply2 = create_post(topic: post.topic)
-      reply3 = create_post(topic: post.topic)
+      topic = post.topic
+      reply1 = create_post(topic: topic)
+      reply2 = create_post(topic: topic)
+      reply3 = create_post(topic: topic)
 
       PostDestroyer.new(reply1.user, reply1).destroy
       PostDestroyer.new(reply2.user, reply2).destroy
@@ -32,13 +34,28 @@ describe PostDestroyer do
       reply2.deleted_at.should_not == nil
       reply3.deleted_at.should == nil
 
+      # if topic is deleted we should still be able to destroy stubs
+
+      topic.trash!
+      reply1.update_column(:updated_at, 2.days.ago)
+      PostDestroyer.destroy_stubs
+
+      reply1.reload
+      reply1.deleted_at.should == nil
+
+      # flag the post, it should not nuke the stub anymore
+      topic.recover!
+      PostAction.act(Fabricate(:coding_horror), reply1, PostActionType.types[:spam])
+
+      PostDestroyer.destroy_stubs
+
+      reply1.reload
+      reply1.deleted_at.should == nil
+
     end
   end
 
   describe 'basic destroying' do
-
-    let(:moderator) { Fabricate(:moderator) }
-    let(:admin) { Fabricate(:admin) }
 
     context "as the creator of the post" do
       before do
@@ -125,6 +142,37 @@ describe PostDestroyer do
 
     end
 
+  end
+
+  context "deleting a post belonging to a deleted topic" do
+    let!(:topic) { post.topic }
+
+    before do
+      topic.trash!(admin)
+      post.reload
+    end
+
+    context "as a moderator" do
+      before do
+        PostDestroyer.new(moderator, post).destroy
+      end
+
+      it "deletes the post" do
+        post.deleted_at.should be_present
+        post.deleted_by.should == moderator
+      end
+    end
+
+    context "as an admin" do
+      before do
+        PostDestroyer.new(admin, post).destroy
+      end
+
+      it "deletes the post" do
+        post.deleted_at.should be_present
+        post.deleted_by.should == admin
+      end
+    end
   end
 
   describe 'after delete' do

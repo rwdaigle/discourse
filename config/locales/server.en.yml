@@ -39,6 +39,10 @@ en:
     zero: "Sorry, new users can't put images in posts."
     one: "Sorry, new users can only put one image in a post."
     other: "Sorry, new users can only put %{count} images in a post."
+  too_many_attachments:
+    zero: "Sorry, new users can't put attachments in posts."
+    one: "Sorry, new users can only put one attachment in a post."
+    other: "Sorry, new users can only put %{count} attachments in a post."
   too_many_links:
     zero: "Sorry, new users can't put links in posts."
     one: "Sorry, new users can only put one link in a post."
@@ -118,7 +122,7 @@ en:
               cant_send_pm: "Sorry, you cannot send a private message to that user."
 
   user_profile:
-    no_info_me: "<div class='missing-profile'>the About Me field of your profile is currently blank, <a href='/users/%{username_lower}/preferences'>would you like to fill it out?</a></div>"
+    no_info_me: "<div class='missing-profile'>the About Me field of your profile is currently blank, <a href='/users/%{username_lower}/preferences/about-me'>would you like to fill it out?</a></div>"
     no_info_other: "<div class='missing-profile'>%{name} hasn't entered anything in the About Me field of their profile yet</div>"
 
   category:
@@ -582,7 +586,7 @@ en:
     suggested_topics: "The number of suggested topics shown at the bottom of a topic"
 
     enable_s3_uploads: "Place uploads on Amazon S3"
-    s3_upload_bucket: "The Amazon S3 bucket name that files will be uploaded into"
+    s3_upload_bucket: "The Amazon S3 bucket name that files will be uploaded into. WARNING: must be lowercase (cf. http://docs.aws.amazon.com/AmazonS3/latest/dev/BucketRestrictions.html)"
     s3_access_key_id: "The Amazon S3 access key id that will be used to upload images"
     s3_secret_access_key: "The Amazon S3 secret access key that will be used to upload images"
     s3_region: "The Amazon S3 region name that will be used to upload images"
@@ -606,12 +610,14 @@ en:
 
     newuser_max_links: "How many links a new user can add to a post"
     newuser_max_images: "How many images a new user can add to a post"
+    newuser_max_attachments: "How many attachments a new user can add to a post"
     newuser_max_mentions_per_post: "Maximum number of @name notifications a new user can use in a post"
     max_mentions_per_post: "Maximum number of @name notifications you can use in a post"
 
     create_thumbnails: "Create thumbnails for lightboxed images"
 
     email_time_window_mins: "How many minutes we wait before sending a user mail, to give them a chance to see it first"
+    email_posts_context: "How many posts to include in emails to show context"
     flush_timings_secs: "How frequently we flush timing data to the server, in seconds"
     max_word_length: "The maximum allowed word length, in characters, in a topic title"
     title_min_entropy: "The minimum allowed entropy (unique characters, non-english count for more) required for a topic title"
@@ -928,12 +934,15 @@ en:
   unsubscribe_link: "To unsubscribe from these emails, visit your [user preferences](%{user_preferences_url})."
 
   user_notifications:
+    previous_discussion: "Previous discussion"
     unsubscribe:
       title: "Unsubscribe"
       description: "Not interested in getting these emails? No problem! Click below to unsubscribe instantly:"
 
     reply_by_email: "To respond, reply to this email or visit %{base_url}%{url} in your browser."
     visit_link_to_respond: "To respond, visit %{base_url}%{url} in your browser."
+
+    posted_by: "Posted by %{username} on %{post_date}"
 
     user_invited_to_private_message:
       subject_template: "[%{site_name}] %{username} invited you to a private message '%{topic_title}'"
@@ -945,10 +954,9 @@ en:
     user_replied:
       subject_template: "[%{site_name}] new reply to your post in '%{topic_title}'"
       text_body_template: |
-        %{username} replied to your post in '%{topic_title}' on %{site_name}:
-
-        ---
         %{message}
+
+        %{context}
 
         ---
         %{respond_instructions}
@@ -956,10 +964,9 @@ en:
     user_quoted:
       subject_template: "[%{site_name}] %{username} quoted you in '%{topic_title}'"
       text_body_template: |
-        %{username} quoted you in '%{topic_title}' on %{site_name}:
-
-        ---
         %{message}
+
+        %{context}
 
         ---
         %{respond_instructions}
@@ -967,10 +974,9 @@ en:
     user_mentioned:
       subject_template: "[%{site_name}] %{username} mentioned you in '%{topic_title}'"
       text_body_template: |
-        %{username} mentioned you in '%{topic_title}' on %{site_name}:
-
-        ---
         %{message}
+
+        %{context}
 
         ---
         %{respond_instructions}
@@ -978,10 +984,9 @@ en:
     user_posted:
       subject_template: "[%{site_name}] new post in '%{topic_title}'"
       text_body_template: |
-        %{username} posted in '%{topic_title}' on %{site_name}:
-
-        ---
         %{message}
+
+        %{context}
 
         ---
         %{respond_instructions}
@@ -1001,7 +1006,6 @@ en:
       text_body_template: |
         %{private_message_from} just sent you a private message
 
-        ---
         %{message}
 
         ---
@@ -1078,7 +1082,10 @@ en:
   upload:
     unauthorized: "Sorry, the file you are trying to upload is not authorized (authorized extensions: %{authorized_extensions})."
     pasted_image_filename: "Pasted image"
-    image:
+    attachments:
+      too_large: "Sorry, the file you are trying to upload is too big (maximum size is %{max_size_kb}%kb)."
+    images:
+      too_large: "Sorry, the image you are trying to upload is too big (maximum size is %{max_size_kb}%kb), please resize it and try again."
       fetch_failure: "Sorry, there has been an error while fetching the image."
       unknown_image_type: "Sorry, but the file you tried to upload doesn't appear to be an image."
       size_not_found: "Sorry, but we couldn't determine the size of the image. Maybe your image is corrupted?"

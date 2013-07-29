@@ -1,15 +1,8 @@
 class PostAnalyzer
 
-  attr_accessor :cooked, :raw
-
   def initialize(raw, topic_id)
     @raw  = raw
     @topic_id = topic_id
-  end
-
-  def cooked_document
-    @cooked = cook(@raw, topic_id: @topic_id)
-    @cooked_document = Nokogiri::HTML.fragment(@cooked)
   end
 
   # What we use to cook posts
@@ -36,6 +29,18 @@ class PostAnalyzer
       if dom_class
         (Post.white_listed_image_classes & dom_class.split(" ")).count > 0
       end
+    end.count
+  end
+
+  # How many attachments are present in the post
+  def attachment_count
+    return 0 unless @raw.present?
+
+    if SiteSetting.enable_s3_uploads?
+      cooked_document.css("a.attachment[href^=\"#{S3Store.base_url}\"]")
+    else
+      cooked_document.css("a.attachment[href^=\"#{LocalStore.directory}\"]") +
+      cooked_document.css("a.attachment[href^=\"#{LocalStore.base_url}\"]")
     end.count
   end
 
@@ -97,6 +102,10 @@ class PostAnalyzer
   end
 
   private
+
+  def cooked_document
+    @cooked_document ||= Nokogiri::HTML.fragment(cook(@raw, topic_id: @topic_id))
+  end
 
   def link_is_a_mention?(l)
     html_class = l.attributes['class']

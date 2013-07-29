@@ -13,18 +13,9 @@ Discourse.PreferencesUsernameController = Discourse.ObjectController.extend({
   errorMessage: null,
   newUsername: null,
 
-  saveDisabled: function() {
-    if (this.get('saving')) return true;
-    if (this.blank('newUsername')) return true;
-    if (this.get('taken')) return true;
-    if (this.get('unchanged')) return true;
-    if (this.get('errorMessage')) return true;
-    return false;
-  }.property('newUsername', 'taken', 'errorMessage', 'unchanged', 'saving'),
-
-  unchanged: function() {
-    return this.get('newUsername') === this.get('content.username');
-  }.property('newUsername', 'content.username'),
+  newUsernameEmpty: Em.computed.empty('newUsername'),
+  saveDisabled: Em.computed.or('saving', 'newUsernameEmpty', 'taken', 'unchanged', 'errorMessage'),
+  unchanged: Discourse.computed.propertyEqual('newUsername', 'username'),
 
   checkTaken: function() {
     if( this.get('newUsername') && this.get('newUsername').length < 3 ) {
@@ -47,7 +38,7 @@ Discourse.PreferencesUsernameController = Discourse.ObjectController.extend({
 
   saveButtonText: function() {
     if (this.get('saving')) return I18n.t("saving");
-    return I18n.t("user.change_username.action");
+    return I18n.t("user.change");
   }.property('saving'),
 
   changeUsername: function() {

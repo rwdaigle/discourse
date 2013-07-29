@@ -13,13 +13,13 @@ ru:
     number:
       human:
         storage_units:
-          format: ! '%n %u'
+          format: 0
           units:
             byte:
-              few: байта
-              many: байт
-              one: байт
-              other: байта
+              one: Байт
+              other: Байт
+              few: Байта
+              many: Байт
             gb: ГБ
             kb: КБ
             mb: МБ
@@ -199,6 +199,7 @@ ru:
       "12": Отправленные
       "13": Входящие
     user:
+      said: '{{username}} писал(а):'
       profile: Профайл
       mute: Отключить
       edit: Настройки
@@ -214,22 +215,22 @@ ru:
       dynamic_favicon: Отображать события на favicon
       external_links_in_new_tab: Открывать все внешние ссылки в новой вкладке
       enable_quoting: Позволить отвечать с цитированием выделенного текста
+      change: изменить
       moderator: '{{user}} - модератор'
       admin: '{{user}} - админ'
       change_password:
-        action: изменить
         success: (письмо отправлено)
         in_progress: (отправка письма)
         error: (ошибка)
+      change_about:
+        title: Изменить информацию обо мне
       change_username:
-        action: изменить
         title: Изменить имя пользователя
         confirm: Изменение имени пользователя может повлечь за собой определенные последствия. Вы уверены?
         taken: Имя пользователя уже занято.
         error: При изменении имени пользователя произошла ошибка.
         invalid: Имя пользователя должно состоять только из цифр и латинских букв
       change_email:
-        action: изменить
         title: Изменить Email
         taken: Данный адрес электронной почты недоступен.
         error: Произошла ошибка. Возможно, этот адрес электронной почты уже используется?
@@ -359,7 +360,7 @@ ru:
     email: Email
     username: Имя пользователя
     last_seen: Был
-    created: Регистрация
+    created: Создана
     trust_level: Уровень доверия
     create_account:
       title: Создать учетную запись
@@ -455,8 +456,8 @@ ru:
       quote_text: Цитата
       code_title: Фрагмент кода
       code_text: вводите код здесь
-      upload_title: Изображение
-      upload_description: введите здесь описание изображения
+      upload_title: Загрузить
+      upload_description: введите здесь описание загружаемого объекта
       olist_title: Нумерованный список
       ulist_title: Маркированный список
       list_item: Элемент списка
@@ -486,16 +487,23 @@ ru:
       moved_post: "<i title='перенесенное сообщение' class='icon icon-arrow-right'></i> {{username}} перенес сообщение в {{link}}"
       total_flagged: всего сообщений с жалобами
     upload_selector:
-      title: Вставка изображения
+      title: Загрузить изображение
+      title_with_attachments: Загрузить изображение или файл
       from_my_computer: С устройства
       from_the_web: Из интернета
-      add_image: Добавить изображение
+      add_title: Добавить изображение
+      add_title_with_attachments: Добавить изображение или файл
       remote_title: изображение из интернета
+      remote_title_with_attachments: изображение или файл из интернета
       remote_tip: введите адрес изображения в формате http://example.com/image.jpg
+      remote_tip_with_attachments: введите адрес изображения или файла в формате http://example.com/image.jpg
       local_title: локальное изображение
+      local_title_with_attachments: локальное изображение или файл
       local_tip: выбрать изображение с устройства.
-      upload: Загрузить
-      upload_file: Загрузка изображения
+      local_tip_with_attachments: выбрать изображение или файл с устройства.
+      upload_title: Загрузить изображение
+      upload_title_with_attachments: Загрузить изображение или файл
+      uploading: Загрузка
     search:
       title: поиск по темам, сообщениям, пользователям или категориям
       placeholder: условия поиска...
@@ -734,10 +742,12 @@ ru:
         create: К сожалению, не удалось создать сообщение. Попробуйте еще раз.
         edit: К сожалению, не удалось изменить сообщение. Попробуйте еще раз.
         upload: К сожалению, не удалось загрузить файл. Попробуйте еще раз.
-        upload_too_large: 'Превышен допустимый размер ({{max_size_kb}}kb) файла. Уменьшите размер изображения и повторите попытку.'
+        attachment_too_large: 'Файл, который вы пытаетесь загрузить, слишком большой (максимальный разрешенный размер {{max_size_kb}}КБ).'
+        image_too_large: 'Изображение, которое вы пытаетесь загрузить, слишком большое (максимальный разрешенный размер {{max_size_kb}}КБ), пожалуйста, уменьшите размер изображения и повторите попытку.'
         too_many_uploads: К сожалению, за один раз можно загрузить только одно изображение.
         upload_not_authorized: 'К сожалению, вы не можете загрузить файл данного типа (список разрешенных типов файлов: {{authorized_extensions}}).'
-        upload_not_allowed_for_new_user: К сожалению, загрузка изображений недоступна новым пользователям.
+        image_upload_not_allowed_for_new_user: К сожалению, загрузка изображений недоступна новым пользователям.
+        attachment_upload_not_allowed_for_new_user: К сожалению, загрузка файлов недоступна новым пользователям.
       abandon: Удалить сохраненный черновик?
       archetypes:
         save: Параметры сохранения
@@ -887,6 +897,7 @@ ru:
           few: Вы уверены, что хотите удалить сообщения?
           many: Вы уверены, что хотите удалить сообщения?
     category:
+      can: может&hellip;
       none: (без категории)
       edit: изменить
       edit_long: Изменить категорию
@@ -915,11 +926,10 @@ ru:
       change_in_category_topic: Изменить описание
       hotness: Популярность
       already_used: Цвет уже используется другой категорией
-      is_secure: Обезопасить категорию?
-      add_group: Добавить группу
       security: Безопасность
-      allowed_groups: 'Доступные группы:'
       auto_close_label: 'Закрыть тему через:'
+      edit_permissions: Изменить права доступа
+      add_permission: Добавить права
     flagging:
       title: Выберите действие над сообщением
       action: Пожаловаться
@@ -1005,6 +1015,10 @@ ru:
           many: '{{categoryName}} ({{count}})'
         help: 'последние темы в категории {{categoryName}}'
     browser_update: 'К сожалению, <a href="http://www.discourse.org/faq/#browser">ваш браузер слишком устарел</a> для комфортного просмотра нашего форума. Пожалуйста, <a href="http://browsehappy.com">обновите ваш браузер</a>.'
+    permission_types:
+      full: Создавать / Отвечать / Просматривать
+      create_post: Отвечать / Просматривать
+      readonly: Просматривать
   admin_js:
     type_to_filter: Введите текст для фильтрации...
     admin:
@@ -1096,6 +1110,9 @@ ru:
         name_placeholder: Название группы, без пробелов, по тем же правилам, что и имя пользователя.
         about: Здесь можно редактировать группы и имена групп
         can_not_edit_automatic: Принадлежность пользователя к системным группам определяется автоматически, однако вы можете самостоятельно переназначить группу пользователя и уровень доверия
+        delete: Удалить
+        delete_confirm: Удалить данную группу?
+        delete_failed: Невозможно удалить группу. Если это автоматически созданная группа, то она не может быть удалена.
       api:
         title: API
         long_title: Информация об API

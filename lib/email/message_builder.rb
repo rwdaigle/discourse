@@ -6,21 +6,65 @@ module Email
     def build_email(*builder_args)
       builder = Email::MessageBuilder.new(*builder_args)
       headers(builder.header_args) if builder.header_args.present?
-      mail(builder.build_args)
+      mail(builder.build_args).tap { |message|
+        if message and h = builder.html_part
+          message.html_part = h
+        end
+      }
     end
   end
 
   class MessageBuilder
+    attr_reader :template_args
 
     def initialize(to, opts=nil)
       @to = to
       @opts = opts || {}
+
+      @template_args = {site_name: SiteSetting.title,
+                        base_url: Discourse.base_url,
+                        user_preferences_url: "#{Discourse.base_url}/user_preferences" }.merge!(@opts)
+
+      if @template_args[:url].present?
+        @template_args[:respond_instructions] =
+          if allow_reply_by_email?
+            I18n.t('user_notifications.reply_by_email', @template_args)
+          else
+            I18n.t('user_notifications.visit_link_to_respond', @template_args)
+          end
+      end
     end
 
     def subject
       subject = @opts[:subject]
       subject = I18n.t("#{@opts[:template]}.subject_template", template_args) if @opts[:template]
       subject
+    end
+
+    def html_part
+      return unless html_override = @opts[:html_override]
+      if @opts[:add_unsubscribe_link]
+
+        if response_instructions = @template_args[:respond_instructions]
+          respond_instructions = PrettyText.cook(response_instructions).html_safe
+          html_override.gsub!("%{respond_instructions}", respond_instructions)
+        end
+
+        unsubscribe_link = PrettyText.cook(I18n.t('unsubscribe_link', template_args)).html_safe
+        html_override.gsub!("%{unsubscribe_link}",unsubscribe_link)
+      end
+
+      styled = Email::Styles.new(html_override)
+      styled.format_basic
+
+      if style = @opts[:style]
+        styled.send "format_#{style}"
+      end
+
+      Mail::Part.new do
+        content_type 'text/html; charset=UTF-8'
+        body styled.to_html
+      end
     end
 
     def body
@@ -33,22 +77,6 @@ module Email
       end
 
       body
-    end
-
-    def template_args
-      @template_args ||= { site_name: SiteSetting.title,
-                           base_url: Discourse.base_url,
-                           user_preferences_url: "#{Discourse.base_url}/user_preferences" }.merge!(@opts)
-
-      if @template_args[:url].present?
-        if allow_reply_by_email? and
-          @template_args[:respond_instructions] = I18n.t('user_notifications.reply_by_email', @template_args)
-        else
-          @template_args[:respond_instructions] = I18n.t('user_notifications.visit_link_to_respond', @template_args)
-        end
-      end
-
-      @template_args
     end
 
     def build_args

@@ -38,9 +38,9 @@ if rails4?
   gem 'rails', '4.0.0'
   gem 'redis-rails', :git => 'git://github.com/SamSaffron/redis-store.git'
   gem 'rails-observers'
-  gem 'protected_attributes'
   gem 'actionpack-action_caching'
   gem 'seed-fu' , github: 'mbleigh/seed-fu'
+  gem 'spork-rails', :github => 'sporkrb/spork-rails'
 else
   # we had pain with the 3.2.13 upgrade so monkey patch the security fix
   # next time around we hope to upgrade
@@ -51,13 +51,19 @@ else
   gem 'sprockets', git: 'https://github.com/SamSaffron/sprockets.git', branch: 'rails-compat'
   gem 'redis-rails'
   gem 'seed-fu'
+  gem 'activerecord-postgres-hstore'
+  gem 'active_attr'
+
+  # not compatible, but we don't really use guard much anymore anyway
+  # instead we use bundle exec rake autospec
+  gem 'guard-spork', require: false
 end
 
 gem 'redis'
 gem 'hiredis'
 gem 'em-redis'
 
-gem 'active_model_serializers', git: 'https://github.com/rails-api/active_model_serializers.git'
+gem 'active_model_serializers'
 
 # we had issues with latest, stick to the rev till we figure this out
 # PR that makes it all hang together welcome
@@ -73,8 +79,6 @@ gem 'rails_multisite', path: 'vendor/gems/rails_multisite'
 gem 'simple_handlebars_rails', path: 'vendor/gems/simple_handlebars_rails'
 
 gem 'redcarpet', require: false
-gem 'activerecord-postgres-hstore'
-gem 'active_attr' # until we get ActiveModel::Model with Rails 4
 gem 'airbrake', '3.1.2', require: false # errbit is broken with 3.1.3 for now
 gem 'clockwork', require: false
 gem 'eventmachine'
@@ -117,7 +121,7 @@ gem 'sinatra', require: nil
 gem 'slim'  # required for sidekiq-web
 gem 'therubyracer', require: 'v8'
 gem 'thin', require: false
-gem 'diffy', require: false
+gem 'diffy', '>= 3.0', require: false
 gem 'highline', require: false
 
 # Gem that enables support for plugins. It is required.
@@ -146,12 +150,16 @@ group :test do
 end
 
 group :test, :development do
+  gem 'mock_redis'
   gem 'listen', require: false
   gem 'certified', require: false
-  gem 'fabrication', require: false
+  if rails4?
+    gem 'fabrication', github: 'paulelliott/fabrication', require: false
+  else
+    gem 'fabrication', require: false
+  end
   gem 'qunit-rails'
   gem 'guard-rspec', require: false
-  gem 'guard-spork', require: false
   gem 'mocha', require: false
   gem 'rb-fsevent', require: RUBY_PLATFORM =~ /darwin/i ? 'rb-fsevent' : false
   gem 'rb-inotify', '~> 0.9', require: RUBY_PLATFORM =~ /linux/i ? 'rb-inotify' : false

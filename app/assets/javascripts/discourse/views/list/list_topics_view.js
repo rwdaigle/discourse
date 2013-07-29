@@ -4,53 +4,31 @@
   @class ListTopicsView
   @extends Discourse.View
   @namespace Discourse
-  @uses Discourse.Scrolling
+  @uses Discourse.LoadMore
   @module Discourse
 **/
-Discourse.ListTopicsView = Discourse.View.extend(Discourse.Scrolling, {
+Discourse.ListTopicsView = Discourse.View.extend(Discourse.LoadMore, {
   templateName: 'list/topics',
   categoryBinding: 'controller.controllers.list.category',
   canCreateTopicBinding: 'controller.controllers.list.canCreateTopic',
   listBinding: 'controller.model',
   loadedMore: false,
   currentTopicId: null,
+  eyelineSelector: '.topic-list-item',
 
   topicTrackingState: function() {
     return Discourse.TopicTrackingState.current();
   }.property(),
 
-  willDestroyElement: function() {
-    this.unbindScrolling();
-  },
-
   didInsertElement: function() {
-    this.bindScrolling();
-    var eyeline = new Discourse.Eyeline('.topic-list-item');
-
-    var listTopicsView = this;
-    eyeline.on('sawBottom', function() {
-      listTopicsView.loadMore();
+    this._super();
+    Em.run.schedule('afterRender', function() {
+      $('html, body').scrollTop(0);
     });
-
-    var scrollPos = Discourse.get('transient.topicListScrollPos');
-    if (scrollPos) {
-      Em.run.schedule('afterRender', function() {
-        $('html, body').scrollTop(scrollPos);
-      });
-    } else {
-      Em.run.schedule('afterRender', function() {
-        $('html, body').scrollTop(0);
-      });
-    }
-    this.set('eyeline', eyeline);
   },
 
-  showTable: function() {
-    var topics = this.get('list.topics');
-    if(topics) {
-      return this.get('list.topics').length > 0 || this.get('topicTrackingState.hasIncoming');
-    }
-  }.property('list.topics.@each','topicTrackingState.hasIncoming'),
+  hasTopics: Em.computed.gt('list.topics.length', 0),
+  showTable: Em.computed.or('hasTopics', 'topicTrackingState.hasIncoming'),
 
   updateTitle: function(){
     Discourse.notifyTitle(this.get('topicTrackingState.incomingCount'));
@@ -61,7 +39,7 @@ Discourse.ListTopicsView = Discourse.View.extend(Discourse.Scrolling, {
     Discourse.notifyTitle(0);
     listTopicsView.get('controller').loadMore().then(function (hasMoreResults) {
       Em.run.schedule('afterRender', function() {
-        listTopicsView.saveScrollPos();
+        listTopicsView.saveScrollPosition();
       });
       if (!hasMoreResults) {
         listTopicsView.get('eyeline').flushRest();
@@ -70,15 +48,14 @@ Discourse.ListTopicsView = Discourse.View.extend(Discourse.Scrolling, {
   },
 
   // Remember where we were scrolled to
-  saveScrollPos: function() {
-    return Discourse.set('transient.topicListScrollPos', $(window).scrollTop());
+  saveScrollPosition: function() {
+    Discourse.Session.current('topicListScrollPosition', $(window).scrollTop());
   },
 
   // When the topic list is scrolled
   scrolled: function(e) {
-    var _ref;
-    this.saveScrollPos();
-    return (_ref = this.get('eyeline')) ? _ref.update() : void 0;
+    this._super();
+    this.saveScrollPosition();
   }
 
 

@@ -1,12 +1,12 @@
 class Admin::GroupsController < Admin::AdminController
   def index
-    groups = Group.order(:name).all
+    groups = Group.order(:name).to_a
     render_serialized(groups, BasicGroupSerializer)
   end
 
   def refresh_automatic_groups
     Group.refresh_automatic_groups!
-    render json: "ok"
+    render json: success_json
   end
 
   def users
@@ -22,7 +22,7 @@ class Admin::GroupsController < Admin::AdminController
       group.usernames = params[:group][:usernames]
       group.name = params[:group][:name] if params[:group][:name]
       if group.save
-        render json: "ok"
+        render json: success_json
       else
         render_json_error group
       end
@@ -31,10 +31,13 @@ class Admin::GroupsController < Admin::AdminController
 
   def create
     group = Group.new
-    group.name = params[:group][:name]
+    group.name = params[:group][:name].strip
     group.usernames = params[:group][:usernames] if params[:group][:usernames]
-    group.save!
-    render_serialized(group, BasicGroupSerializer)
+    if group.save
+      render_serialized(group, BasicGroupSerializer)
+    else
+      render_json_error group
+    end
   end
 
   def destroy
@@ -43,7 +46,7 @@ class Admin::GroupsController < Admin::AdminController
       can_not_modify_automatic
     else
       group.destroy
-      render json: "ok"
+      render json: success_json
     end
   end
 

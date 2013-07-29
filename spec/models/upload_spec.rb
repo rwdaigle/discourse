@@ -27,6 +27,7 @@ describe Upload do
   end
 
   let(:image_sha1) { Digest::SHA1.file(image.tempfile).hexdigest }
+  let(:image_filesize) { File.size(image.tempfile) }
 
   let(:attachment) do
     ActionDispatch::Http::UploadedFile.new({
@@ -34,6 +35,8 @@ describe Upload do
       tempfile: File.new(__FILE__)
     })
   end
+
+  let(:attachment_filesize) { File.size(attachment.tempfile) }
 
   context ".create_thumbnail!" do
 
@@ -77,7 +80,7 @@ describe Upload do
     it "does not create another upload if it already exists" do
       Upload.expects(:where).with(sha1: image_sha1).returns([upload])
       Upload.expects(:create!).never
-      Upload.create_for(user_id, image).should == upload
+      Upload.create_for(user_id, image, image_filesize).should == upload
     end
 
     it "computes width & height for images" do
@@ -85,24 +88,24 @@ describe Upload do
       FastImage.any_instance.expects(:size).returns([100, 200])
       ImageSizer.expects(:resize)
       ActionDispatch::Http::UploadedFile.any_instance.expects(:rewind)
-      Upload.create_for(user_id, image)
+      Upload.create_for(user_id, image, image_filesize)
     end
 
     it "does not create an upload when there is an error with FastImage" do
       SiteSetting.expects(:authorized_image?).returns(true)
       Upload.expects(:create!).never
-      expect { Upload.create_for(user_id, attachment) }.to raise_error(FastImage::UnknownImageType)
+      expect { Upload.create_for(user_id, attachment, attachment_filesize) }.to raise_error(FastImage::UnknownImageType)
     end
 
     it "does not compute width & height for non-image" do
       SiteSetting.expects(:authorized_image?).returns(false)
       FastImage.any_instance.expects(:size).never
-      Upload.create_for(user_id, image)
+      Upload.create_for(user_id, image, image_filesize)
     end
 
     it "saves proper information" do
       Upload.expects(:store_file).returns(url)
-      upload = Upload.create_for(user_id, image)
+      upload = Upload.create_for(user_id, image, image_filesize)
       upload.user_id.should == user_id
       upload.original_filename.should == image.original_filename
       upload.filesize.should == File.size(image.tempfile)
@@ -153,18 +156,18 @@ describe Upload do
     it "identifies internal or relatives urls" do
       Discourse.expects(:base_url_no_prefix).returns("http://discuss.site.com")
       Upload.has_been_uploaded?("http://discuss.site.com/uploads/default/42/0123456789ABCDEF.jpg").should == true
-      Upload.has_been_uploaded?("/uploads/42/0123456789ABCDEF.jpg").should == true
+      Upload.has_been_uploaded?("/uploads/default/42/0123456789ABCDEF.jpg").should == true
     end
 
     it "identifies internal urls when using a CDN" do
-      ActionController::Base.expects(:asset_host).returns("http://my.cdn.com").twice
+      Rails.configuration.action_controller.expects(:asset_host).returns("http://my.cdn.com").twice
       Upload.has_been_uploaded?("http://my.cdn.com/uploads/default/42/0123456789ABCDEF.jpg").should == true
     end
 
     it "identifies S3 uploads" do
       SiteSetting.stubs(:enable_s3_uploads).returns(true)
       SiteSetting.stubs(:s3_upload_bucket).returns("Bucket")
-      Upload.has_been_uploaded?("//s3.amazonaws.com/Bucket/1337.png").should == true
+      Upload.has_been_uploaded?("//bucket.s3.amazonaws.com/1337.png").should == true
     end
 
     it "identifies external urls" do
@@ -174,30 +177,22 @@ describe Upload do
 
   end
 
-  context ".is_on_s3?" do
-
-    before do
-      SiteSetting.stubs(:enable_s3_uploads).returns(true)
-      SiteSetting.stubs(:s3_upload_bucket).returns("BuCkEt")
-   end
-
-    it "case-insensitively matches the old subdomain format" do
-      Upload.is_on_s3?("//bucket.s3.amazonaws.com/1337.png").should == true
-    end
-
-    it "case-sensitively matches the new folder format" do
-      Upload.is_on_s3?("//s3.amazonaws.com/BuCkEt/1337.png").should == true
-      Upload.is_on_s3?("//s3.amazonaws.com/bucket/1337.png").should == false
-    end
-
-  end
-
   context ".get_from_url" do
 
+    it "works when the file has been uploaded" do
+      Upload.expects(:where).returns([]).once
+      Upload.get_from_url("/uploads/default/1/10387531.jpg")
+    end
+
+    it "works when using a cdn" do
+      Rails.configuration.action_controller.stubs(:asset_host).returns("http://my.cdn.com")
+      Upload.expects(:where).with(url: "/uploads/default/1/02395732905.jpg").returns([]).once
+      Upload.get_from_url("http://my.cdn.com/uploads/default/1/02395732905.jpg")
+    end
+
     it "works only when the file has been uploaded" do
-      Upload.expects(:has_been_uploaded?).returns(false)
       Upload.expects(:where).never
-      Upload.get_from_url("discourse.org")
+      Upload.get_from_url("http://domain.com/my/file.txt")
     end
 
   end

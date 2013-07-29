@@ -184,7 +184,7 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
 
         var selectedPosts = topicController.get('selectedPosts');
         Discourse.Post.deleteMany(selectedPosts);
-        topicController.get('content.posts').removeObjects(selectedPosts);
+        topicController.get('model.postStream').removePosts(selectedPosts);
         topicController.toggleMultiSelect();
       }
     });
@@ -332,7 +332,6 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
   },
 
   replyAsNewTopic: function(post) {
-    // TODO shut down topic draft cleanly if it exists ...
     var composerController = this.get('controllers.composer');
     var promise = composerController.open({
       action: Discourse.Composer.CREATE_TOPIC,
@@ -343,9 +342,9 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
 
     promise.then(function() {
       Discourse.Post.loadQuote(post.get('id')).then(function(q) {
-        composerController.appendText("" + (I18n.t("post.continue_discussion", {
+        composerController.appendText(I18n.t("post.continue_discussion", {
           postLink: postLink
-        })) + "\n\n" + q);
+        }) + "\n\n" + q);
       });
     });
   },

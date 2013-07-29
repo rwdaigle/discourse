@@ -51,9 +51,7 @@ class Topic < ActiveRecord::Base
     self.title = TextCleaner.clean_title(TextSentinel.title_sentinel(title).text) if errors[:title].empty?
   end
 
-  if rails4?
-    store_accessor :meta_data
-  else
+  unless rails4?
     serialize :meta_data, ActiveRecord::Coders::Hstore
   end
 
@@ -253,7 +251,6 @@ class Topic < ActiveRecord::Base
          .listable_topics
          .limit(SiteSetting.max_similar_results)
          .order('similarity desc')
-         .all
   end
 
   def update_status(status, enabled, user)
@@ -471,7 +468,7 @@ class Topic < ActiveRecord::Base
 
   # Chooses which topic users to feature
   def feature_topic_users(args={})
-    reload
+    reload unless rails4?
 
     # Don't include the OP or the last poster
     to_feature = posts.where('user_id NOT IN (?, ?)', user_id, last_post_user_id)

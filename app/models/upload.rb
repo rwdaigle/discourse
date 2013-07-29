@@ -43,7 +43,7 @@ class Upload < ActiveRecord::Base
     end
   end
 
-  def self.create_for(user_id, file)
+  def self.create_for(user_id, file, filesize)
     # compute the sha
     sha1 = Digest::SHA1.file(file.tempfile).hexdigest
     # check if the file has already been uploaded
@@ -61,7 +61,7 @@ class Upload < ActiveRecord::Base
       upload = Upload.create!({
         user_id: user_id,
         original_filename: file.original_filename,
-        filesize: File.size(file.tempfile),
+        filesize: filesize,
         sha1: sha1,
         url: "",
         width: width,
@@ -91,7 +91,7 @@ class Upload < ActiveRecord::Base
   end
 
   def self.is_relative?(url)
-    url.start_with?("/uploads/")
+    url.start_with?(LocalStore.directory)
   end
 
   def self.is_local?(url)
@@ -99,10 +99,12 @@ class Upload < ActiveRecord::Base
   end
 
   def self.is_on_s3?(url)
-    SiteSetting.enable_s3_uploads? && (url.start_with?(S3Store.base_url) || url.start_with?(S3Store.base_url_old))
+    SiteSetting.enable_s3_uploads? && url.start_with?(S3Store.base_url)
   end
 
   def self.get_from_url(url)
+    # we store relative urls, so we need to remove any host/cdn
+    url = url.gsub(/^#{LocalStore.asset_host}/i, "") if LocalStore.asset_host.present?
     Upload.where(url: url).first if has_been_uploaded?(url)
   end
 
