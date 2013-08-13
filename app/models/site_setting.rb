@@ -76,7 +76,7 @@ class SiteSetting < ActiveRecord::Base
   setting(:queue_jobs, !Rails.env.test?)
   setting(:crawl_images, !Rails.env.test?)
   setting(:max_image_width, 690)
-  setting(:create_thumbnails, false)
+  setting(:create_thumbnails, true)
   client_setting(:category_featured_topics, 6)
   setting(:topics_per_page, 30)
   client_setting(:posts_per_page, 20)
@@ -87,6 +87,7 @@ class SiteSetting < ActiveRecord::Base
   setting(:apple_touch_icon_url, '/assets/default-apple-touch-icon.png')
 
   setting(:ninja_edit_window, 5.minutes.to_i)
+  client_setting(:edit_history_visible_to_public, true)
   client_setting(:delete_removed_posts_after, 24) # hours
   setting(:post_undo_action_window_mins, 10)
   setting(:system_username, '')
@@ -236,8 +237,10 @@ class SiteSetting < ActiveRecord::Base
 
   client_setting(:relative_date_duration, 14)
 
-  setting(:delete_user_max_age, 7)
+  client_setting(:delete_user_max_age, 14)
   setting(:delete_all_posts_max, 10)
+
+  setting(:username_change_period, 3) # days
 
 
   def self.generate_api_key!

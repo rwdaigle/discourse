@@ -62,6 +62,11 @@ Discourse::Application.routes.draw do
       end
     end
 
+    scope '/logs' do
+      resources :blocked_emails,    only: [:index, :create, :update, :destroy]
+      resources :staff_action_logs, only: [:index, :create, :update, :destroy]
+    end
+
     get 'customize' => 'site_customizations#index', constraints: AdminConstraint.new
     get 'flags' => 'flags#index'
     get 'flags/:filter' => 'flags#index'
@@ -140,6 +145,7 @@ Discourse::Application.routes.draw do
 
 
   get 'posts/by_number/:topic_id/:post_number' => 'posts#by_number'
+  get 'posts/:id/reply-history' => 'posts#reply_history'
   resources :posts do
     get 'versions'
     put 'bookmark'

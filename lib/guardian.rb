@@ -203,7 +203,7 @@ class Guardian
   end
 
   def can_delete_all_posts?(user)
-    is_staff? && user && !user.admin? && user.created_at >= 7.days.ago && user.post_count <= SiteSetting.delete_all_posts_max.to_i
+    is_staff? && user && !user.admin? && user.created_at >= SiteSetting.delete_user_max_age.days.ago && user.post_count <= SiteSetting.delete_all_posts_max.to_i
   end
 
   def can_remove_allowed_users?(topic)
@@ -276,6 +276,10 @@ class Guardian
 
   def can_edit_topic?(topic)
     !topic.archived && (is_staff? || is_my_own?(topic))
+  end
+
+  def can_edit_username?(user)
+    is_staff? || (is_me?(user) && user.created_at > SiteSetting.username_change_period.days.ago)
   end
 
   # Deleting Methods

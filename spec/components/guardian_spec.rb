@@ -1045,12 +1045,14 @@ describe Guardian do
     end
 
     shared_examples "can_delete_all_posts examples" do
-      it "is true if user is newer than 7 days old" do
-        Guardian.new(actor).can_delete_all_posts?(Fabricate.build(:user, created_at: 6.days.ago)).should be_true
+      it "is true if user is newer than delete_user_max_age days old" do
+        SiteSetting.expects(:delete_user_max_age).returns(10)
+        Guardian.new(actor).can_delete_all_posts?(Fabricate.build(:user, created_at: 9.days.ago)).should be_true
       end
 
-      it "is false if user is older than 7 days old" do
-        Guardian.new(actor).can_delete_all_posts?(Fabricate.build(:user, created_at: 8.days.ago)).should be_false
+      it "is false if user is older than delete_user_max_age days old" do
+        SiteSetting.expects(:delete_user_max_age).returns(10)
+        Guardian.new(actor).can_delete_all_posts?(Fabricate.build(:user, created_at: 11.days.ago)).should be_false
       end
 
       it "is false if user is an admin" do
@@ -1122,6 +1124,49 @@ describe Guardian do
 
     it 'is true for admins' do
       Guardian.new(admin).can_change_trust_level?(user).should be_true
+    end
+  end
+
+  describe "can_edit_username?" do
+    it "is false without a logged in user" do
+      Guardian.new(nil).can_edit_username?(build(:user, created_at: 1.minute.ago)).should be_false
+    end
+
+    it "is false for regular users to edit another user's username" do
+      Guardian.new(build(:user)).can_edit_username?(build(:user, created_at: 1.minute.ago)).should be_false
+    end
+
+    shared_examples "staff can always change usernames" do
+      it "is true for moderators" do
+        Guardian.new(moderator).can_edit_username?(user).should be_true
+      end
+
+      it "is true for admins" do
+        Guardian.new(admin).can_edit_username?(user).should be_true
+      end
+    end
+
+    context 'for a new user' do
+      let(:target_user) { build(:user, created_at: 1.minute.ago) }
+      include_examples "staff can always change usernames"
+
+      it "is true for the user to change his own username" do
+        Guardian.new(target_user).can_edit_username?(target_user).should be_true
+      end
+    end
+
+    context 'for an old user' do
+      before do
+        SiteSetting.stubs(:username_change_period).returns(3)
+      end
+
+      let(:target_user) { build(:user, created_at: 4.days.ago) }
+
+      include_examples "staff can always change usernames"
+
+      it "is false for the user to change his own username" do
+        Guardian.new(target_user).can_edit_username?(target_user).should be_false
+      end
     end
   end
 

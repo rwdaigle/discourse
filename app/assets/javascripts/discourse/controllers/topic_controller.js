@@ -222,7 +222,7 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
   },
 
   resetRead: function() {
-    Discourse.ScreenTrack.instance().reset();
+    Discourse.ScreenTrack.current().reset();
     this.unsubscribe();
 
     var topicController = this;
@@ -253,8 +253,27 @@ Discourse.TopicController = Discourse.ObjectController.extend(Discourse.Selected
   },
 
   // Toggle the star on the topic
-  toggleStar: function(e) {
+  toggleStar: function() {
     this.get('content').toggleStar();
+  },
+
+  /**
+    Toggle the replies this post is a reply to
+
+    @method showReplyHistory
+  **/
+  toggleReplyHistory: function(post) {
+    var replyHistory = post.get('replyHistory'),
+        topicController = this;
+
+    if (replyHistory.length > 0) {
+      replyHistory.clear();
+    } else {
+      post.set('loadingReplyHistory', true);
+      topicController.get('postStream').findReplyHistory(post).then(function () {
+        post.set('loadingReplyHistory', false);
+      });
+    }
   },
 
   /**
