@@ -700,9 +700,9 @@ table {
 
 // Logs
 
-.blocked-emails {
+.screened-emails, .screened-urls {
   width: 900px;
-  .email {
+  .email, .url {
     width: 400px;
   }
   .action, .match_count, .last_match_at, .created_at {
@@ -716,8 +716,11 @@ table {
   .action {
     width: 120px;
   }
-  .staff_user, .target_user {
+  .staff_user {
     width: 100px;
+  }
+  .subject {
+    width: 200px;
   }
   .created_at {
     width: 50px;
@@ -729,7 +732,7 @@ table {
     text-align: center;
   }
   .details {
-    width: 400px;
+    width: 300px;
     a {
       text-decoration: underline;
     }
@@ -775,7 +778,7 @@ table {
   position: absolute;
 }
 
-.blocked-emails, .staff-actions {
+.staff-actions, .screened-emails, .screened-urls {
   margin-left: 5px;
   border-bottom: dotted 1px #ddd;
 
@@ -801,5 +804,11 @@ table {
   .ember-list-item-view {
     width: 100%;
     border-top: solid 1px #ddd;
+  }
+}
+
+.log-details-modal {
+  .modal-tab {
+    width: 95%;
   }
 }

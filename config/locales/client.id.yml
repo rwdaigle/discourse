@@ -181,8 +181,6 @@ id:
         title: "Last IP Address"
       avatar:
         title: "Avatar"
-        instructions: "We use <a href='https://gravatar.com' target='_blank'>Gravatar</a> for avatars based on your email"
-
       filters:
         all: "All"
 

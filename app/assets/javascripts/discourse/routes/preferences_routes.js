@@ -13,6 +13,13 @@ Discourse.PreferencesRoute = Discourse.RestrictedUserRoute.extend({
 
   renderTemplate: function() {
     this.render('preferences', { into: 'user', outlet: 'userOutlet', controller: 'preferences' });
+  },
+
+  events: {
+    showAvatarSelector: function() {
+      Discourse.Route.showModal(this, 'avatarSelector');
+      this.controllerFor("avatarSelector").init();
+    }
   }
 });
 

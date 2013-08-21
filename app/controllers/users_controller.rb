@@ -1,10 +1,11 @@
 require_dependency 'discourse_hub'
 require_dependency 'user_name_suggester'
+require_dependency 'user_activator'
 
 class UsersController < ApplicationController
 
-  skip_before_filter :check_xhr, only: [:show, :password_reset, :update, :activate_account, :avatar, :authorize_email, :user_preferences_redirect]
   skip_before_filter :authorize_mini_profiler, only: [:avatar]
+  skip_before_filter :check_xhr, only: [:show, :password_reset, :update, :activate_account, :authorize_email, :user_preferences_redirect, :avatar]
 
   before_filter :ensure_logged_in, only: [:username, :update, :change_email, :user_preferences_redirect]
 
@@ -160,33 +161,16 @@ class UsersController < ApplicationController
     return fake_success_response if suspicious? params
 
     user = User.new_from_params(params)
-
-    auth = session[:authentication]
-    if valid_session_authentication?(auth, params[:email])
-      user.active = true
-    end
-    user.password_required! unless auth
+    auth = authenticate_user(user, params)
 
     if user.valid? && SiteSetting.call_discourse_hub?
       DiscourseHub.register_nickname(user.username, user.email)
     end
 
-    if user.save
-      if SiteSetting.must_approve_users?
-        message = I18n.t("login.wait_approval")
-      elsif !user.active?
-        message = I18n.t("login.activate_email", email: user.email)
-        Jobs.enqueue(:user_email,
-          type: :signup,
-          user_id: user.id,
-          email_token: user.email_tokens.first.token
-        )
-      else
-        message = I18n.t("login.active")
-        log_on_user(user)
-        user.enqueue_welcome_message('welcome_user')
-      end
 
+    if user.save
+      activator = UserActivator.new(user, session, cookies)
+      message = activator.activation_message
       create_third_party_auth_records(user, auth) if auth.present?
 
       # Clear authentication session.
@@ -210,33 +194,24 @@ class UsersController < ApplicationController
         errors:I18n.t(
           "login.not_available", suggestion: UserNameSuggester.suggest(params[:username])
         )
-      )
+    )
     }
   rescue RestClient::Forbidden
     render json: { errors: [I18n.t("discourse_hub.access_token_problem")] }
   end
 
-  def get_honeypot_value
-    render json: {value: honeypot_value, challenge: challenge_value}
+  def authenticate_user(user, params)
+    auth = session[:authentication]
+    if valid_session_authentication?(auth, params[:email])
+      user.active = true
+    end
+    user.password_required! unless auth
+
+    auth
   end
 
-  # all avatars are funneled through here
-  def avatar
-
-    # TEMP to catch all missing spots
-    # raise ActiveRecord::RecordNotFound
-
-    user = User.select(:email).where(username_lower: params[:username].downcase).first
-    if user.present?
-      # for now we only support gravatar in square (redirect cached for a day),
-      # later we can use x-sendfile and/or a cdn to serve local
-      size = determine_avatar_size(params[:size])
-      url = user.avatar_template.gsub("{size}", size.to_s)
-      expires_in 1.day
-      redirect_to url
-    else
-      raise ActiveRecord::RecordNotFound
-    end
+  def get_honeypot_value
+    render json: {value: honeypot_value, challenge: challenge_value}
   end
 
   def password_reset
@@ -332,8 +307,70 @@ class UsersController < ApplicationController
 
     results = UserSearch.search term, topic_id
 
-    render json: { users: results.as_json(only: [ :username, :name ],
+    render json: { users: results.as_json(only: [ :username, :name, :use_uploaded_avatar, :upload_avatar_template, :uploaded_avatar_id],
                                           methods: :avatar_template) }
+  end
+
+  # [LEGACY] avatars in quotes/oneboxes might still be pointing to this route
+  # fixing it requires a rebake of all the posts
+  def avatar
+    user = User.where(username_lower: params[:username].downcase).first
+    if user.present?
+      size = determine_avatar_size(params[:size])
+      url = user.avatar_template.gsub("{size}", size.to_s)
+      expires_in 1.day
+      redirect_to url
+    else
+      raise ActiveRecord::RecordNotFound
+    end
+  end
+
+  def determine_avatar_size(size)
+    size = size.to_i
+    size = 64 if size == 0
+    size = 10 if size < 10
+    size = 128 if size > 128
+    size
+  end
+
+  def upload_avatar
+    user = fetch_user_from_params
+    guardian.ensure_can_edit!(user)
+
+    file = params[:file] || params[:files].first
+
+    # check the file size (note: this might also be done in the web server)
+    filesize = File.size(file.tempfile)
+    max_size_kb = SiteSetting.max_image_size_kb * 1024
+    return render status: 413, text: I18n.t("upload.images.too_large", max_size_kb: max_size_kb) if filesize > max_size_kb
+
+    upload = Upload.create_for(user.id, file, filesize)
+
+    user.uploaded_avatar = upload
+    user.use_uploaded_avatar = true
+    user.save!
+
+    Jobs.enqueue(:generate_avatars, upload_id: upload.id)
+
+    render json: { url: upload.url }
+
+  rescue FastImage::ImageFetchFailure
+    render status: 422, text: I18n.t("upload.images.fetch_failure")
+  rescue FastImage::UnknownImageType
+    render status: 422, text: I18n.t("upload.images.unknown_image_type")
+  rescue FastImage::SizeNotFound
+    render status: 422, text: I18n.t("upload.images.size_not_found")
+  end
+
+  def toggle_avatar
+    params.require(:use_uploaded_avatar)
+    user = fetch_user_from_params
+    guardian.ensure_can_edit!(user)
+
+    user.use_uploaded_avatar = params[:use_uploaded_avatar]
+    user.save!
+
+    render nothing: true
   end
 
   private
@@ -389,6 +426,16 @@ class UsersController < ApplicationController
           github_user_id: auth[:github_user_id]
         )
       end
+
+      if oauth2_auth?(auth)
+        Oauth2UserInfo.create(
+          uid: auth[:oauth2][:uid],
+          provider: auth[:oauth2][:provider],
+          name: auth[:name],
+          email: auth[:email],
+          user_id: user.id
+        )
+      end
     end
 
     def twitter_auth?(auth)
@@ -406,11 +453,8 @@ class UsersController < ApplicationController
       GithubUserInfo.find_by_github_user_id(auth[:github_user_id]).nil?
     end
 
-    def determine_avatar_size(size)
-      size = size.to_i
-      size = 64 if size == 0
-      size = 10 if size < 10
-      size = 128 if size > 128
-      size
+    def oauth2_auth?(auth)
+      auth[:oauth2].is_a?(Hash) && auth[:oauth2][:provider] && auth[:oauth2][:uid] &&
+      Oauth2UserInfo.where(provider: auth[:oauth2][:provider], uid: auth[:oauth2][:uid]).empty?
     end
 end

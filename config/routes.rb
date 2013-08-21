@@ -1,4 +1,5 @@
 require 'sidekiq/web'
+require 'sidetiq/web'
 
 require_dependency 'admin_constraint'
 require_dependency 'staff_constraint'
@@ -35,6 +36,7 @@ Discourse::Application.routes.draw do
       collection do
         get 'list/:query' => 'users#index'
         put 'approve-bulk' => 'users#approve_bulk'
+        delete 'reject-bulk' => 'users#reject_bulk'
       end
       put 'ban'
       put 'delete_all_posts'
@@ -63,8 +65,9 @@ Discourse::Application.routes.draw do
     end
 
     scope '/logs' do
-      resources :blocked_emails,    only: [:index, :create, :update, :destroy]
-      resources :staff_action_logs, only: [:index, :create, :update, :destroy]
+      resources :staff_action_logs, only: [:index]
+      resources :screened_emails,   only: [:index]
+      resources :screened_urls,     only: [:index]
     end
 
     get 'customize' => 'site_customizations#index', constraints: AdminConstraint.new
@@ -135,14 +138,17 @@ Discourse::Application.routes.draw do
   get 'users/:username/preferences/about-me' => 'users#preferences', constraints: {username: USERNAME_ROUTE_FORMAT}
   get 'users/:username/preferences/username' => 'users#preferences', constraints: {username: USERNAME_ROUTE_FORMAT}
   put 'users/:username/preferences/username' => 'users#username', constraints: {username: USERNAME_ROUTE_FORMAT}
+  # LEGACY ROUTE
   get 'users/:username/avatar(/:size)' => 'users#avatar', constraints: {username: USERNAME_ROUTE_FORMAT}
+  get 'users/:username/preferences/avatar' => 'users#preferences', constraints: {username: USERNAME_ROUTE_FORMAT}
+  put 'users/:username/preferences/avatar/toggle' => 'users#toggle_avatar', constraints: {username: USERNAME_ROUTE_FORMAT}
+  post 'users/:username/preferences/avatar' => 'users#upload_avatar', constraints: {username: USERNAME_ROUTE_FORMAT}
   get 'users/:username/invited' => 'users#invited', constraints: {username: USERNAME_ROUTE_FORMAT}
   post 'users/:username/send_activation_email' => 'users#send_activation_email', constraints: {username: USERNAME_ROUTE_FORMAT}
   get 'users/:username/activity' => 'users#show', constraints: {username: USERNAME_ROUTE_FORMAT}
   get 'users/:username/activity/:filter' => 'users#show', constraints: {username: USERNAME_ROUTE_FORMAT}
 
   resources :uploads
-
 
   get 'posts/by_number/:topic_id/:post_number' => 'posts#by_number'
   get 'posts/:id/reply-history' => 'posts#reply_history'
@@ -210,9 +216,6 @@ Discourse::Application.routes.draw do
   post 'topics/timings'
   get 'topics/similar_to'
   get 'topics/created-by/:username' => 'list#topics_by', as: 'topics_by', constraints: {username: USERNAME_ROUTE_FORMAT}
-
-  # Legacy route for old avatars
-  get 'threads/:topic_id/:post_number/avatar' => 'topics#avatar', constraints: {topic_id: /\d+/, post_number: /\d+/}
 
   # Topic routes
   get 't/:slug/:topic_id/wordpress' => 'topics#wordpress', constraints: {topic_id: /\d+/}

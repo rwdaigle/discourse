@@ -65,7 +65,12 @@ u.admin = true
 u.approved = true
 u.save
 ```
-4. In Discourse admin settings, set `force_hostname` to your applications Heroku domain. This step is required for Discourse to properly form links sent with account confirmation emails and password resets. The auto detected application url would point to an Amazon AWS instance. Since you can't log in yet, you can set `force_hostname` in the console.
+
+4. In Discourse admin settings, set `force_hostname` to your applications Heroku domain.
+
+    This step is required for Discourse to properly form links sent with account confirmation emails and password resets. The auto detected application url would point to an Amazon AWS instance.
+
+    Since you can't log in yet, you can set `force_hostname` in the console.
 
 ```ruby
 SiteSetting.create(:name => 'force_hostname', :data_type =>1, :value=>'yourappnamehere.herokuapp.com')

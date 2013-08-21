@@ -13,24 +13,6 @@ Discourse.AdminLogsIndexRoute = Discourse.Route.extend({
 });
 
 /**
-  The route that lists blocked email addresses.
-
-  @class AdminLogsBlockedEmailsRoute
-  @extends Discourse.Route
-  @namespace Discourse
-  @module Discourse
-**/
-Discourse.AdminLogsBlockedEmailsRoute = Discourse.Route.extend({
-  renderTemplate: function() {
-    this.render('admin/templates/logs/blocked_emails', {into: 'adminLogs'});
-  },
-
-  setupController: function() {
-    return this.controllerFor('adminLogsBlockedEmails').show();
-  }
-});
-
-/**
   The route that lists staff actions that were logged.
 
   @class AdminLogsStaffActionLogsRoute
@@ -51,10 +33,58 @@ Discourse.AdminLogsStaffActionLogsRoute = Discourse.Route.extend({
     return controller.show();
   },
 
+  events: {
+    showDetailsModal: function(logRecord) {
+      Discourse.Route.showModal(this, 'admin_staff_action_log_details', logRecord);
+      this.controllerFor('modal').set('modalClass', 'log-details-modal');
+    },
+
+    showCustomDetailsModal: function(logRecord) {
+      Discourse.Route.showModal(this, logRecord.action_name + '_details', logRecord);
+      this.controllerFor('modal').set('modalClass', 'tabbed-modal log-details-modal');
+    }
+  },
+
   deactivate: function() {
     this._super();
 
     // Clear any filters when we leave the route
     Discourse.URL.set('queryParams', null);
+  }
+});
+
+/**
+  The route that lists blocked email addresses.
+
+  @class AdminLogsScreenedEmailsRoute
+  @extends Discourse.Route
+  @namespace Discourse
+  @module Discourse
+**/
+Discourse.AdminLogsScreenedEmailsRoute = Discourse.Route.extend({
+  renderTemplate: function() {
+    this.render('admin/templates/logs/screened_emails', {into: 'adminLogs'});
+  },
+
+  setupController: function() {
+    return this.controllerFor('adminLogsScreenedEmails').show();
+  }
+});
+
+/**
+  The route that lists screened URLs.
+
+  @class AdminLogsScreenedUrlsRoute
+  @extends Discourse.Route
+  @namespace Discourse
+  @module Discourse
+**/
+Discourse.AdminLogsScreenedUrlsRoute = Discourse.Route.extend({
+  renderTemplate: function() {
+    this.render('admin/templates/logs/screened_urls', {into: 'adminLogs'});
+  },
+
+  setupController: function() {
+    return this.controllerFor('adminLogsScreenedUrls').show();
   }
 });

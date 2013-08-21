@@ -9,7 +9,11 @@ class StaffActionLog < ActiveRecord::Base
   validates_presence_of :action
 
   def self.actions
-    @actions ||= Enum.new(:delete_user, :change_trust_level)
+    @actions ||= Enum.new( :delete_user,
+                           :change_trust_level,
+                           :change_site_setting,
+                           :change_site_customization,
+                           :delete_site_customization)
   end
 
   def self.with_filters(filters)
@@ -22,7 +26,16 @@ class StaffActionLog < ActiveRecord::Base
         query = query.where("#{key.to_s}_id = ?", obj_id)
       end
     end
+    query = query.where("subject = ?", filters[:subject]) if filters[:subject]
     query
+  end
+
+  def new_value_is_json?
+    [StaffActionLog.actions[:change_site_customization], StaffActionLog.actions[:delete_site_customization]].include?(action)
+  end
+
+  def previous_value_is_json?
+    new_value_is_json?
   end
 end
 
@@ -37,5 +50,14 @@ end
 #  details        :text
 #  created_at     :datetime         not null
 #  updated_at     :datetime         not null
+#  context        :string(255)
+#  ip_address     :string(255)
+#  email          :string(255)
+#
+# Indexes
+#
+#  index_staff_action_logs_on_action_and_id          (action,id)
+#  index_staff_action_logs_on_staff_user_id_and_id   (staff_user_id,id)
+#  index_staff_action_logs_on_target_user_id_and_id  (target_user_id,id)
 #
 
