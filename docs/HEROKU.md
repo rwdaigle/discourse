@@ -35,7 +35,7 @@ $ heroku config:set SECRET_TOKEN=`openssl rand -base64 32` RACK_ENV=production R
 1. Deploy and scale
   1. `$ git push heroku master` (this initial deploy can take some time due to the extensive dependency list and asset compilation for an app of Discourse's size)
   1. `$ heroku run bundle exec rake db:migrate`
-  1. `$ heroku ps:scale web=1 clockwork=1 sidekiq=1`
+  1. `$ heroku ps:scale web=1 sidekiq=1`
   1. `$ heroku open`
   1. Verify dyno startup w/ `$ heroku ps` and `$ heroku logs -t`
 
@@ -45,9 +45,6 @@ The default instructions provision add-ons/services we recommend for running a p
 
 1. We recommend the Honeybadger add-on to notify you of any app exceptions that occur. If you are willing to forego this service, remove it with: `$ heroku addons:remove honeybadger`
 1. Openredis provides a small Redis instance, which is required for Discourse. You can provision a smaller, free, alternative if you wish: `$ heroku addons:remove openredis && herokua addons:add redistogo`
-1. Run clockwork inline: If you're only running a single web dyno, you can eliminate the need to run another dyno for scheduling background tasks by moving the clock process into the web dyno. (If you need to scale past one web dyno, however, you will need to have a separate dyno for the clock process to ensure it's a singleton process). Execute the following:
-  1. `$ heroku ps:scale clockwork=0`
-  1. `$ heroku config:set EMBED_CLOCKWORK=1`
 
 If you follow each step here, your total cost will be reduced to that of two dynos (one of which is free) - about $35/month.
 
@@ -66,7 +63,7 @@ u.approved = true
 u.save
 ```
 
-4. In Discourse admin settings, set `force_hostname` to your applications Heroku domain.
+4. Set `force_hostname` to your applications Heroku domain.
 
     This step is required for Discourse to properly form links sent with account confirmation emails and password resets. The auto detected application url would point to an Amazon AWS instance.
 
