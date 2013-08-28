@@ -30,7 +30,7 @@ Once the app is running locally, and while still in the app directory, execute t
   1. `$ heroku labs:enable log-runtime-metrics`
 1. Set config:
 ```
-$ heroku config:set SECRET_TOKEN=`openssl rand -base64 32` RACK_ENV=production RUBY_GC_MALLOC_LIMIT=90000000 WEB_CONCURRENCY=2
+$ heroku config:set SECRET_TOKEN=`openssl rand -base64 32` RACK_ENV=production RUBY_GC_MALLOC_LIMIT=90000000 WEB_CONCURRENCY=2 NEW_RELIC_APP_NAME=discourse
 ```
 1. Deploy and scale
   1. `$ git push heroku master` (this initial deploy can take some time due to the extensive dependency list and asset compilation for an app of Discourse's size)
