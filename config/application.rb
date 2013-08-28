@@ -119,6 +119,8 @@ module Discourse
     # attr_accessible.
     config.active_record.whitelist_attributes = false
 
+    config.assets.initialize_on_precompile = false
+
     unless Rails.env.test?
       require 'plugin'
       Discourse.activate_plugins!
