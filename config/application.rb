@@ -121,6 +121,9 @@ module Discourse
 
     require 'plugin'
     require 'auth'
+
+    config.assets.initialize_on_precompile = false
+
     unless Rails.env.test?
       Discourse.activate_plugins!
     end
