@@ -198,6 +198,7 @@ gem 'redis-rack-cache', git: 'https://github.com/SamSaffron/redis-rack-cache.git
 gem 'rack-cache', require: false
 gem 'rack-cors', require: false
 gem 'unicorn', require: false
+gem 'puma', require: false
 
 # Heroku (but useful anywhere) stuff
 gem 'unicorn-worker-killer'
