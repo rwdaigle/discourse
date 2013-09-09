@@ -169,12 +169,12 @@ describe Jobs::Importer do
               User.exec_sql_row_count("SELECT table_name FROM information_schema.tables WHERE table_schema = 'backup' AND table_name = 'users'").should == 1
             end
 
+            # Neil, please have a look here
             it "should have a users table that's empty" do
               @user1 = Fabricate(:user)
-              User.count.should == 1
               Jobs::Importer.any_instance.stubs(:ordered_models_for_import).returns([User])
               Jobs::Importer.new.execute(@importer_args)
-              User.count.should == 0
+              User.count.should == 0 # empty table (data loading is stubbed for this test)
             end
 
             it "should indicate that an import is running" do
@@ -190,7 +190,6 @@ describe Jobs::Importer do
               Discourse.expects(:enable_maintenance_mode).in_sequence(seq).at_least_once
               Jobs::Importer.any_instance.expects(:backup_tables).in_sequence(seq).at_least_once
               Jobs::Importer.any_instance.expects(:load_data).in_sequence(seq).at_least_once
-              # fails here
               Jobs::Importer.new.execute( @importer_args )
             end
 

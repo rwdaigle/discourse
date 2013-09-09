@@ -48,7 +48,7 @@ If you have a mail server responsible for handling the egress of email from your
 Install necessary packages:
 
     # Run these commands as your normal login (e.g. "michael")
-    sudo apt-get -y install build-essential libssl-dev libyaml-dev git libtool libxslt-dev libxml2-dev libpq-dev gawk curl pngcrush python-software-properties
+    sudo apt-get -y install build-essential libssl-dev libyaml-dev git libtool libxslt-dev libxml2-dev libpq-dev gawk curl pngcrush imagemagick python-software-properties
 
     # If you're on Ubuntu >= 12.10, change:
     # python-software-properties to software-properties-common
@@ -187,7 +187,6 @@ Edit /var/www/discourse/config/discourse.pill
 
 - change application name from 'discourse' if necessary
 - Ensure appropriate Bluepill.application line is uncommented
-- search for "host to run on" and change to current hostname
 
 Edit /var/www/discourse/config/environments/production.rb
 - browse througn all the settings
@@ -287,7 +286,7 @@ and create an account by logging in normally, then run the commands:
 
     # Mark yourself as the 'system user':
     # (in rails console)
-    > SiteSetting.system_username = me.username
+    > SiteSetting.site_contact_username = me.username
 
 At this point we recommend you start going through the various items in the
 [Discourse Admin Quick Start Guide](https://github.com/discourse/discourse/wiki/The-Discourse-Admin-Quick-Start-Guide)

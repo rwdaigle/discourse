@@ -23,6 +23,7 @@ test("basic cooking", function() {
   cooked("_trout_", "<p><em>trout</em></p>", "it italicizes text.");
   cooked("***hello***", "<p><strong><em>hello</em></strong></p>", "it can do bold and italics at once.");
   cooked("word_with_underscores", "<p>word_with_underscores</p>", "it doesn't do intraword italics");
+  cooked("common/_special_font_face.html.erb", "<p>common/_special_font_face.html.erb</p>", "it doesn't intraword with a slash");
   cooked("hello \\*evil\\*", "<p>hello *evil*</p>", "it supports escaping of asterisks");
   cooked("hello \\_evil\\_", "<p>hello _evil_</p>", "it supports escaping of italics");
   cooked("brussel sproutes are *awful*.", "<p>brussel sproutes are <em>awful</em>.</p>", "it doesn't swallow periods.");
@@ -109,12 +110,29 @@ test("Links", function() {
 
 });
 
+test("simple quotes", function() {
+  cooked("> nice!", "<blockquote><p>nice!</p></blockquote>", "it supports simple quotes");
+  cooked(" > nice!", "<blockquote><p>nice!</p></blockquote>", "it allows quotes with preceeding spaces");
+  cooked("> level 1\n> > level 2",
+         "<blockquote><p>level 1</p><blockquote><p>level 2</p></blockquote></blockquote>",
+         "it allows nesting of blockquotes");
+  cooked("> level 1\n>  > level 2",
+         "<blockquote><p>level 1</p><blockquote><p>level 2</p></blockquote></blockquote>",
+         "it allows nesting of blockquotes with spaces");
+
+  cooked("- hello\n\n  > world\n  > eviltrout",
+         "<ul><li>hello</li></ul>\n\n<blockquote><p>world<br>eviltrout</p></blockquote>",
+         "it allows quotes within a list.");
+  cooked("  > indent 1\n  > indent 2", "<blockquote><p>indent 1<br>indent 2</p></blockquote>", "allow multiple spaces to indent");
+
+});
+
 test("Quotes", function() {
 
   cookedOptions("[quote=\"eviltrout, post: 1\"]\na quote\n\nsecond line\n[/quote]",
                 { topicId: 2 },
                 "<p><aside class=\"quote\" data-post=\"1\"><div class=\"title\"><div class=\"quote-controls\"></div>eviltrout said:</div><blockquote>" +
-                "a quote<br/><br/>second line<br/></blockquote></aside></p>",
+                "a quote<br/><br/>second line</blockquote></aside></p>",
                 "works with multiple lines");
 
   cookedOptions("1[quote=\"bob, post:1\"]my quote[/quote]2",
@@ -199,6 +217,11 @@ test("Oneboxing", function() {
   ok(matches("http://test.com\nhttp://test2.com", /onebox[\s\S]+onebox/m), "supports multiple links");
   ok(!matches("http://test.com bob", /onebox/), "doesn't onebox links that have trailing text");
 
+  ok(!matches("[Tom Cruise](http://www.tomcruise.com/)", "onebox"), "Markdown links with labels are not oneboxed");
+  ok(matches("[http://www.tomcruise.com/](http://www.tomcruise.com/)",
+    "onebox"),
+    "Markdown links where the label is the same as the url are oneboxed");
+
   cooked("http://en.wikipedia.org/wiki/Homicide:_Life_on_the_Street",
          "<p><a href=\"http://en.wikipedia.org/wiki/Homicide:_Life_on_the_Street\" class=\"onebox\"" +
          ">http://en.wikipedia.org/wiki/Homicide:_Life_on_the_Street</a></p>",
@@ -247,6 +270,12 @@ test("Code Blocks", function() {
   cooked("```ruby\nhello `eviltrout`\n```",
          "<p><pre><code class=\"ruby\">hello &#x60;eviltrout&#x60;</code></pre></p>",
          "it allows code with backticks in it");
+
+
+  cooked("```[quote=\"sam, post:1, topic:9441, full:true\"]This is `<not>` a bug.[/quote]```",
+         "<p><pre><code class=\"lang-auto\">[quote=&quot;sam, post:1, topic:9441, full:true&quot;]This is &#x60;&lt;not&gt;&#x60; a bug.[/quote]</code></pre></p>",
+         "it allows code with backticks in it");
+
 });
 
 test("SanitizeHTML", function() {

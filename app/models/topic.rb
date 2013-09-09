@@ -10,6 +10,16 @@ class Topic < ActiveRecord::Base
   include ActionView::Helpers::SanitizeHelper
   include RateLimiter::OnCreateRecord
   include Trashable
+  extend Forwardable
+
+  def_delegator :featured_users, :user_ids, :featured_user_ids
+  def_delegator :featured_users, :choose, :feature_topic_users
+
+  def_delegator :notifier, :watch!, :notify_watch!
+  def_delegator :notifier, :tracking!, :notify_tracking!
+  def_delegator :notifier, :regular!, :notify_regular!
+  def_delegator :notifier, :muted!, :notify_muted!
+  def_delegator :notifier, :toggle_mute, :toggle_mute
 
   def self.max_sort_order
     2**31 - 1
@@ -19,14 +29,6 @@ class Topic < ActiveRecord::Base
 
   def featured_users
     @featured_users ||= TopicFeaturedUsers.new(self)
-  end
-
-  def featured_user_ids
-    featured_users.user_ids
-  end
-
-  def feature_topic_users(args={})
-    featured_users.choose(args)
   end
 
   def trash!(trashed_by=nil)
@@ -561,32 +563,10 @@ class Topic < ActiveRecord::Base
     @topic_notifier ||= TopicNotifier.new(self)
   end
 
-  # notification stuff
-  def notify_watch!(user)
-    notifier.watch! user
-  end
-
-  def notify_tracking!(user)
-    notifier.tracking! user
-  end
-
-  def notify_regular!(user)
-    notifier.regular! user
-  end
-
-  def notify_muted!(user)
-    notifier.muted! user
-  end
-
   def muted?(user)
     if user && user.id
       notifier.muted?(user.id)
     end
-  end
-
-  # Enable/disable the mute on the topic
-  def toggle_mute(user_id)
-    notifier.toggle_mute user_id
   end
 
   def auto_close_days=(num_days)
@@ -635,7 +615,7 @@ end
 #  updated_at              :datetime         not null
 #  views                   :integer          default(0), not null
 #  posts_count             :integer          default(0), not null
-#  user_id                 :integer          not null
+#  user_id                 :integer
 #  last_post_user_id       :integer          not null
 #  reply_count             :integer          default(0), not null
 #  featured_user1_id       :integer

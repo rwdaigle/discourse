@@ -146,7 +146,8 @@ Discourse::Application.routes.draw do
   get 'users/:username/activity' => 'users#show', constraints: {username: USERNAME_ROUTE_FORMAT}
   get 'users/:username/activity/:filter' => 'users#show', constraints: {username: USERNAME_ROUTE_FORMAT}
 
-  resources :uploads
+  get 'uploads/:site/:id/:sha.:extension' => 'uploads#show', constraints: {site: /\w+/, id: /\d+/, sha: /[a-z0-9]{15,16}/i, extension: /\w{2,}/}
+  post 'uploads' => 'uploads#create'
 
   get 'posts/by_number/:topic_id/:post_number' => 'posts#by_number'
   get 'posts/:id/reply-history' => 'posts#reply_history'
@@ -216,6 +217,7 @@ Discourse::Application.routes.draw do
   get 'topics/created-by/:username' => 'list#topics_by', as: 'topics_by', constraints: {username: USERNAME_ROUTE_FORMAT}
   get 'topics/private-messages/:username' => 'list#private_messages', as: 'topics_private_messages', constraints: {username: USERNAME_ROUTE_FORMAT}
   get 'topics/private-messages-sent/:username' => 'list#private_messages_sent', as: 'topics_private_messages_sent', constraints: {username: USERNAME_ROUTE_FORMAT}
+  get 'topics/private-messages-unread/:username' => 'list#private_messages_unread', as: 'topics_private_messages_unread', constraints: {username: USERNAME_ROUTE_FORMAT}
 
   # Topic routes
   get 't/:slug/:topic_id/wordpress' => 'topics#wordpress', constraints: {topic_id: /\d+/}

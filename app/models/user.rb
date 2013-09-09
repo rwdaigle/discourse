@@ -13,22 +13,22 @@ class User < ActiveRecord::Base
   include Roleable
 
   has_many :posts
-  has_many :notifications
-  has_many :topic_users
+  has_many :notifications, dependent: :destroy
+  has_many :topic_users, dependent: :destroy
   has_many :topics
   has_many :user_open_ids, dependent: :destroy
-  has_many :user_actions
-  has_many :post_actions
-  has_many :email_logs
+  has_many :user_actions, dependent: :destroy
+  has_many :post_actions, dependent: :destroy
+  has_many :email_logs, dependent: :destroy
   has_many :post_timings
-  has_many :topic_allowed_users
+  has_many :topic_allowed_users, dependent: :destroy
   has_many :topics_allowed, through: :topic_allowed_users, source: :topic
-  has_many :email_tokens
+  has_many :email_tokens, dependent: :destroy
   has_many :views
-  has_many :user_visits
-  has_many :invites
-  has_many :topic_links
-  has_many :uploads
+  has_many :user_visits, dependent: :destroy
+  has_many :invites, dependent: :destroy
+  has_many :topic_links, dependent: :destroy
+  has_many :uploads, dependent: :destroy
 
   has_one :facebook_user_info, dependent: :destroy
   has_one :twitter_user_info, dependent: :destroy
@@ -37,11 +37,11 @@ class User < ActiveRecord::Base
   has_one :oauth2_user_info, dependent: :destroy
   belongs_to :approved_by, class_name: 'User'
 
-  has_many :group_users
+  has_many :group_users, dependent: :destroy
   has_many :groups, through: :group_users
   has_many :secure_categories, through: :groups, source: :categories
 
-  has_one :user_search_data
+  has_one :user_search_data, dependent: :destroy
 
   belongs_to :uploaded_avatar, class_name: 'Upload', dependent: :destroy
 
@@ -61,6 +61,12 @@ class User < ActiveRecord::Base
 
   after_create :create_email_token
 
+  before_destroy do
+    # These tables don't have primary keys, so destroying them with activerecord is tricky:
+    PostTiming.delete_all(user_id: self.id)
+    View.delete_all(user_id: self.id)
+  end
+
   # Whether we need to be sending a system message after creation
   attr_accessor :send_welcome_message
 
@@ -70,6 +76,8 @@ class User < ActiveRecord::Base
   scope :blocked, -> { where(blocked: true) } # no index
   scope :banned, -> { where('banned_till IS NOT NULL AND banned_till > ?', Time.zone.now) } # no index
   scope :not_banned, -> { where('banned_till IS NULL') }
+  # excluding fake users like the community user
+  scope :real, -> { where('id > 0') }
 
   module NewTopicDuration
     ALWAYS = -1
@@ -467,10 +475,6 @@ class User < ActiveRecord::Base
 
   def self.count_by_signup_date(sinceDaysAgo=30)
     where('created_at > ?', sinceDaysAgo.days.ago).group('date(created_at)').order('date(created_at)').count
-  end
-
-  def self.counts_by_trust_level
-    group('trust_level').count
   end
 
   def update_topic_reply_count

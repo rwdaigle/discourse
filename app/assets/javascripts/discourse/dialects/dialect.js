@@ -64,7 +64,7 @@ function invalidBoundary(args, prev) {
   var last = prev[prev.length - 1];
   if (typeof last !== "string") { return; }
 
-  if (args.wordBoundary && (!last.match(/\W$/))) { return true; }
+  if (args.wordBoundary && (last.match(/(\w|\/)$/))) { return true; }
   if (args.spaceBoundary && (!last.match(/\s$/))) { return true; }
 }
 
@@ -96,17 +96,20 @@ Discourse.Dialect = {
 
     For example to replace all occurrances of :) with a smile image:
 
-     ```javascript
-      Discourse.Dialect.inlineReplace(':)', ['img', {src: '/images/smile.gif'}])
+    ```javascript
+      Discourse.Dialect.inlineReplace(':)', function (text) {
+        return ['img', {src: '/images/smile.png'}];
+      });
+
     ```
 
     @method inlineReplace
     @param {String} token The token we want to replace
-    @param {Array} jsonml The JsonML to replace it with.
+    @param {Function} emitter A function that emits the JsonML for the replacement.
   **/
-  inlineReplace: function(token, jsonml) {
+  inlineReplace: function(token, emitter) {
     dialect.inline[token] = function(text, match, prev) {
-      return [token.length, jsonml];
+      return [token.length, emitter.call(this, token)];
     };
   },
 
@@ -201,6 +204,92 @@ Discourse.Dialect = {
       if (contents) {
         return [endPos+stop.length, contents];
       }
+    };
+  },
+
+  /**
+    Replaces a block of text between a start and stop. As opposed to inline, these
+    might span multiple lines.
+
+    Here's an example that takes the content between `[code]` ... `[/code]` and
+    puts them inside a `pre` tag:
+
+    ```javascript
+      Discourse.Dialect.replaceBlock({
+        start: /(\[code\])([\s\S]*)/igm,
+        stop: '[/code]',
+
+        emitter: function(blockContents) {
+          return ['p', ['pre'].concat(blockContents)];
+        }
+      });
+    ```
+
+    @method replaceBlock
+    @param {Object} args Our replacement options
+      @param {String} [opts.start] The starting regexp we want to find
+      @param {String} [opts.stop] The ending token we want to find
+      @param {Function} [opts.emitter] The emitting function to transform the contents of the block into jsonML
+
+  **/
+  replaceBlock: function(args) {
+    dialect.block[args.start.toString()] = function(block, next) {
+      args.start.lastIndex = 0;
+      var m = (args.start).exec(block);
+      if (!m) { return; }
+
+      var startPos = block.indexOf(m[0]),
+          leading,
+          blockContents = [],
+          result = [],
+          lineNumber = block.lineNumber;
+
+      if (startPos > 0) {
+        leading = block.slice(0, startPos);
+        lineNumber += (leading.split("\n").length - 1);
+
+        var para = ['p'];
+        this.processInline(leading).forEach(function (l) {
+          para.push(l);
+        });
+
+        result.push(para);
+      }
+
+      if (m[2]) {
+        next.unshift(MD.mk_block(m[2], null, lineNumber + 1));
+      }
+
+      lineNumber++;
+      while (next.length > 0) {
+        var b = next.shift(),
+            blockLine = b.lineNumber,
+            diff = ((typeof blockLine === "undefined") ? lineNumber : blockLine) - lineNumber;
+
+        var endFound = b.indexOf(args.stop),
+            leadingContents = b.slice(0, endFound),
+            trailingContents = b.slice(endFound+args.stop.length);
+
+        for (var i=1; i<diff; i++) {
+          blockContents.push("");
+        }
+        lineNumber = blockLine + b.split("\n").length - 1;
+
+        if (endFound !== -1) {
+          if (trailingContents) {
+            next.unshift(MD.mk_block(trailingContents));
+          }
+
+          blockContents.push(leadingContents.replace(/\s+$/, ""));
+          break;
+        } else {
+          blockContents.push(b);
+        }
+      }
+
+      var test = args.emitter.call(this, blockContents, m, dialect.options);
+      result.push(test);
+      return result;
     };
   },
 

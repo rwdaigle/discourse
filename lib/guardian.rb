@@ -9,6 +9,7 @@ class Guardian
     def secure_category_ids; []; end
     def topic_create_allowed_category_ids; []; end
     def has_trust_level?(level); false; end
+    def email; nil; end
   end
 
   def initialize(user=nil)
@@ -34,6 +35,17 @@ class Guardian
 
   def is_staff?
     @user.staff?
+  end
+
+  def is_developer?
+    @user &&
+    is_admin? &&
+    (Rails.env.development? ||
+      (
+        Rails.configuration.respond_to?(:developer_emails) &&
+        Rails.configuration.developer_emails.include?(@user.email)
+      )
+    )
   end
 
   # Can the user see the object?
@@ -89,8 +101,8 @@ class Guardian
     # You must be an admin to impersonate
     is_admin? &&
 
-    # You may not impersonate other admins
-    not(target.admin?)
+    # You may not impersonate other admins unless you are a dev
+    (!target.admin? || is_developer?)
 
     # Additionally, you may not impersonate yourself;
     # but the two tests for different admin statuses
@@ -229,11 +241,11 @@ class Guardian
   end
 
   def can_create_topic?(parent)
-    can_create_post?(parent)
+    user && user.trust_level >= SiteSetting.min_trust_to_create_topic.to_i && can_create_post?(parent)
   end
 
   def can_create_topic_on_category?(category)
-    can_create_post?(nil) && (
+    can_create_topic?(nil) && (
       !category ||
       Category.topic_create_allowed(self).where(:id => category.id).count == 1
     )
@@ -340,8 +352,12 @@ class Guardian
       # not secure, or I can see it
       (not(topic.read_restricted_category?) || can_see_category?(topic.category)) &&
 
-      # not private, or I am allowed (or an admin)
-      (not(topic.private_message?) || authenticated? && (topic.all_allowed_users.where(id: @user.id).exists? || is_admin?))
+      # NOTE
+      # At the moment staff can see PMs, there is some talk of restricting this, however
+      # we still need to allow staff to join PMs for the case of flagging ones
+
+      # not private, or I am allowed (or is staff)
+      (not(topic.private_message?) || authenticated? && (topic.all_allowed_users.where(id: @user.id).exists? || is_staff?))
     end
   end
 
