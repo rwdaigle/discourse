@@ -28,7 +28,7 @@ Discourse = Ember.Application.createWithMixins(Discourse.Ajax, {
     return u + url;
   },
 
-  resolver: Discourse.Resolver,
+  Resolver: Discourse.Resolver,
 
   titleChanged: function() {
     var title = "";
@@ -112,7 +112,7 @@ Discourse = Ember.Application.createWithMixins(Discourse.Ajax, {
       if ($currentTarget.attr('target')) { return; }
       if ($currentTarget.data('auto-route')) { return; }
 
-      // If it's an ember #linkTo skip it
+      // If it's an ember #link-to skip it
       if ($currentTarget.hasClass('ember-view')) { return; }
 
       if ($currentTarget.hasClass('lightbox')) { return; }
@@ -236,8 +236,11 @@ Discourse = Ember.Application.createWithMixins(Discourse.Ajax, {
     Discourse.subscribeUserToNotifications();
 
     if (Discourse.initializers) {
-      Discourse.initializers.forEach(function (init) {
-        init.call(this);
+      var self = this;
+      Em.run.next(function() {
+        Discourse.initializers.forEach(function (init) {
+          init.call(self);
+        });
       });
     }
   }
