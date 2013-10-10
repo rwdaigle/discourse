@@ -36,7 +36,7 @@ $ heroku config:set SECRET_TOKEN=`openssl rand -base64 32` RACK_ENV=production R
 1. Deploy and scale
   1. `$ git push heroku master` (this initial deploy can take some time due to the extensive dependency list and asset compilation for an app of Discourse's size)
   1. `$ heroku run bundle exec rake db:migrate`
-  1. `$ heroku ps:scale web=1 sidekiq=1`
+  1. `$ heroku ps:scale web=1 worker=1`
   1. `$ heroku open`
   1. Verify dyno startup w/ `$ heroku ps` and `$ heroku logs -t`
 
