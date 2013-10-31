@@ -45,7 +45,7 @@ $ heroku config:set SECRET_TOKEN=`openssl rand -base64 32` RACK_ENV=production R
 The default instructions provision add-ons/services we recommend for running a production application. Developers that are just playing around, or don't need a production caliber service, can reduce their cost with a few adjustments.
 
 1. We recommend the Honeybadger add-on to notify you of any app exceptions that occur. If you are willing to forego this service, remove it with: `$ heroku addons:remove honeybadger`
-1. Openredis provides a small Redis instance, which is required for Discourse. You can provision a smaller, free, alternative if you wish: `$ heroku addons:remove openredis && herokua addons:add redistogo`
+1. Openredis provides a small Redis instance, which is required for Discourse. You can provision a smaller, free, alternative if you wish: `$ heroku addons:remove openredis && heroku addons:add redistogo`
 
 If you follow each step here, your total cost will be reduced to that of two dynos (one of which is free) - about $35/month.
 
