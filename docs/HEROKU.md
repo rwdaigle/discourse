@@ -19,7 +19,7 @@ Once the app is running locally, and while still in the app directory, execute t
 
 1. Create the app on Heroku: `$ heroku create discourse-myname`
 1. Provision recommended add-ons:
-  1. `$ heroku addons:add heroku-postgresql`
+  1. `$ heroku addons:create heroku-postgresql`
   1. Promote your database to be the main database for your app. `color` would be `gold` if you saw `HEROKU_POSTGRESQL_GOLD_URL` after running `heroku config`
   
     `$ heroku pg:promote [color]`
