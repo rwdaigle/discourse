@@ -24,12 +24,12 @@ Once the app is running locally, and while still in the app directory, execute t
   
     `$ heroku pg:promote [color]`
 
-  1. `$ heroku addons:add openredis`
-  1. `$ heroku addons:add sendgrid`
-  1. `$ heroku addons:add papertrail`
-  1. `$ heroku addons:add librato --logs`
-  1. `$ heroku addons:add honeybadger`
-  1. `$ heroku addons:add newrelic:stark`
+  1. `$ heroku addons:create openredis`
+  1. `$ heroku addons:create sendgrid`
+  1. `$ heroku addons:create papertrail`
+  1. `$ heroku addons:create librato --logs`
+  1. `$ heroku addons:create honeybadger`
+  1. `$ heroku addons:create newrelic:stark`
 1. Enable recommended lab features
   1. `$ heroku labs:enable user-env-compile`
   1. `$ heroku labs:enable log-runtime-metrics`
