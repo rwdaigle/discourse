@@ -29,7 +29,7 @@ Once the app is running locally, and while still in the app directory, execute t
   1. `$ heroku addons:add papertrail`
   1. `$ heroku addons:add librato --logs`
   1. `$ heroku addons:add honeybadger`
-  1. `$ heroku addons:add newrelic:stark`
+  1. `$ heroku addons:add newrelic:wayne`
 1. Enable recommended lab features
   1. `$ heroku labs:enable user-env-compile`
   1. `$ heroku labs:enable log-runtime-metrics`
@@ -65,7 +65,9 @@ Once the app is deployed you still need to establish the admin user and set some
 u = User.first
 u.admin = true
 u.approved = true
+u.activate
 u.save
+SiteSetting.site_contact_username = u.username
 ```
 
 4. Set `force_hostname` to your applications Heroku domain.
